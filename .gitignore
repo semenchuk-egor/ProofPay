@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+*.log
+dist/
+build/
+out/
+.ssh_keys/
+.allowed_signers
+.DS_Store
+*.swp
+__pycache__/
+*.pyc
+.pytest_cache/
