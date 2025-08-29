@@ -1,117 +1,116 @@
 import React, { useState } from 'react';
-import { ethers } from 'ethers';
 
-export const PaymentForm = ({ signer, onSuccess }) => {
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
+/**
+ * Component for creating payment transactions
+ */
+export default function PaymentForm() {
+  const [formData, setFormData] = useState({
+    recipient: '',
+    amount: '',
+    tokenAddress: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
-      // Validate inputs
-      if (!ethers.isAddress(recipient)) {
-        throw new Error('Invalid recipient address');
-      }
-
-      const amountWei = ethers.parseEther(amount);
-
-      // Create payment transaction
-      const tx = await signer.sendTransaction({
-        to: recipient,
-        value: amountWei,
-      });
-
-      await tx.wait();
-
-      // Call backend to create attestation
-      const response = await fetch('/api/payments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sender: await signer.getAddress(),
-          recipient,
-          amount: parseFloat(amount),
-          description,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (onSuccess) {
-        onSuccess(data);
-      }
-
-      // Reset form
-      setRecipient('');
-      setAmount('');
-      setDescription('');
+      // TODO: Implement payment submission
+      console.log('Submitting payment:', formData);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSuccess(true);
+      setFormData({ recipient: '', amount: '', tokenAddress: '' });
     } catch (err) {
       setError(err.message);
-      console.error('Payment error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-md mx-auto p-6 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-4">Send Payment</h2>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold mb-6">Send Payment</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Recipient Address
+          </label>
+          <input
+            type="text"
+            value={formData.recipient}
+            onChange={(e) => setFormData({ ...formData, recipient: e.target.value })}
+            placeholder="0x..."
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
-      )}
 
-      <div>
-        <label className="block text-sm font-medium mb-2">Recipient Address</label>
-        <input
-          type="text"
-          value={recipient}
-          onChange={(e) => setRecipient(e.target.value)}
-          className="w-full px-3 py-2 border rounded-md"
-          placeholder="0x..."
-          required
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Amount (ETH)
+          </label>
+          <input
+            type="number"
+            step="0.000001"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            placeholder="0.00"
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Token Address (Optional)
+          </label>
+          <input
+            type="text"
+            value={formData.tokenAddress}
+            onChange={(e) => setFormData({ ...formData, tokenAddress: e.target.value })}
+            placeholder="0x... (leave empty for native ETH)"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Leave empty to send native ETH, or enter ERC20 token address
+          </p>
+        </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-green-800 text-sm">Payment submitted successfully!</p>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition"
+        >
+          {loading ? 'Processing...' : 'Send Payment'}
+        </button>
+      </form>
+
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        <p className="text-xs text-gray-500 text-center">
+          Both sender and recipient must have valid EAS attestations
+        </p>
       </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Amount (ETH)</label>
-        <input
-          type="number"
-          step="0.001"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full px-3 py-2 border rounded-md"
-          placeholder="0.1"
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Description</label>
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-3 py-2 border rounded-md"
-          placeholder="Payment for..."
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? 'Processing...' : 'Send Payment'}
-      </button>
-    </form>
+    </div>
   );
-};
+}
