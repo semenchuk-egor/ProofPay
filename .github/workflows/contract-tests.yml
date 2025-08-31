@@ -1,0 +1,55 @@
+name: Smart Contract Tests
+
+on:
+  push:
+    branches: [ main, proofpay_dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Run Forge build
+      run: |
+        cd contracts
+        forge build
+      id: build
+
+    - name: Run Forge tests
+      run: |
+        cd contracts
+        forge test -vvv
+      id: test
+
+    - name: Generate coverage report
+      run: |
+        cd contracts
+        forge coverage --report lcov
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./contracts/lcov.info
+        flags: smartcontracts
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run Solhint
+      run: |
+        npm install -g solhint
+        solhint 'contracts/**/*.sol'
