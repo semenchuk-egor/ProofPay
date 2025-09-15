@@ -1,87 +1,103 @@
 import React from 'react';
-import { formatAddress, formatAmount, formatDate } from '../utils/format';
 
-export const TransactionCard = ({ transaction, userAddress }) => {
-  const isSent = transaction.sender === userAddress;
-  
-  const getStatusIcon = (status) => {
-    const icons = {
-      completed: '✓',
-      pending: '⏳',
-      failed: '✗',
-    };
-    return icons[status] || '?';
+/**
+ * Card component for displaying transaction information
+ */
+export default function TransactionCard({ transaction }) {
+  const {
+    type,
+    address,
+    amount,
+    status,
+    timestamp,
+    txHash
+  } = transaction;
+
+  const getTypeStyles = () => {
+    return type === 'sent' 
+      ? { bg: 'bg-red-100', text: 'text-red-600', icon: '↑' }
+      : { bg: 'bg-green-100', text: 'text-green-600', icon: '↓' };
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      completed: 'bg-green-500',
-      pending: 'bg-yellow-500',
-      failed: 'bg-red-500',
+  const getStatusBadge = () => {
+    const styles = {
+      completed: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      failed: 'bg-red-100 text-red-800'
     };
-    return colors[status] || 'bg-gray-500';
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status]}`}>
+        {status === 'completed' && '✓'}
+        {status === 'pending' && '⏳'}
+        {status === 'failed' && '✗'}
+        {' '}{status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
   };
+
+  const formatAddress = (addr) => {
+    return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
+  };
+
+  const formatAmount = (amt) => {
+    return `${parseFloat(amt).toFixed(4)} ETH`;
+  };
+
+  const formatTimestamp = (ts) => {
+    const date = new Date(ts);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
+  const typeStyles = getTypeStyles();
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition">
+    <div className="bg-white rounded-lg shadow hover:shadow-md transition p-4 border border-gray-200">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
-          {/* Direction Badge */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`text-sm font-medium ${isSent ? 'text-red-600' : 'text-green-600'}`}>
-              {isSent ? '↑ Sent' : '↓ Received'}
-            </span>
-            <div className={`w-6 h-6 rounded-full ${getStatusColor(transaction.status)} flex items-center justify-center text-white text-xs`}>
-              {getStatusIcon(transaction.status)}
-            </div>
-          </div>
-
-          {/* Amount */}
-          <div className="text-2xl font-bold mb-1">
-            {formatAmount(transaction.amount)} ETH
-          </div>
-
-          {/* Counterparty */}
-          <div className="text-sm text-gray-600 mb-2">
-            <span className="font-medium">{isSent ? 'To:' : 'From:'}</span>{' '}
-            <span className="font-mono">
-              {formatAddress(isSent ? transaction.recipient : transaction.sender)}
+        {/* Left side - Icon and Details */}
+        <div className="flex items-start space-x-3">
+          <div className={`${typeStyles.bg} rounded-full p-2 mt-1`}>
+            <span className={`${typeStyles.text} text-lg font-bold`}>
+              {typeStyles.icon}
             </span>
           </div>
-
-          {/* Description */}
-          {transaction.description && (
-            <div className="text-sm text-gray-700 mb-2">
-              {transaction.description}
-            </div>
-          )}
-
-          {/* Timestamp */}
-          <div className="text-xs text-gray-500">
-            {formatDate(transaction.timestamp)}
+          
+          <div>
+            <p className="font-medium text-gray-900">
+              {type === 'sent' ? 'Sent to' : 'Received from'}
+            </p>
+            <p className="text-sm text-gray-600 font-mono">{formatAddress(address)}</p>
+            <p className="text-xs text-gray-500 mt-1">{formatTimestamp(timestamp)}</p>
           </div>
         </div>
 
-        {/* View Details Button */}
-        <button
-          onClick={() => window.open(`https://basescan.org/tx/${transaction.payment_id}`, '_blank')}
-          className="ml-4 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
-        >
-          View
-        </button>
+        {/* Right side - Amount and Status */}
+        <div className="text-right">
+          <p className={`text-lg font-semibold ${typeStyles.text}`}>
+            {type === 'sent' ? '-' : '+'}{formatAmount(amount)}
+          </p>
+          <div className="mt-2">
+            {getStatusBadge()}
+          </div>
+        </div>
       </div>
 
-      {/* Attestation Badge */}
-      {transaction.attestation_uid && (
+      {/* Transaction Hash Link */}
+      {txHash && status === 'completed' && (
         <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2 text-xs text-blue-600">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          <a
+            href={`https://basescan.org/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+          >
+            <span>View on Basescan</span>
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
-            <span>Attestation Verified</span>
-          </div>
+          </a>
         </div>
       )}
     </div>
   );
-};
+}
