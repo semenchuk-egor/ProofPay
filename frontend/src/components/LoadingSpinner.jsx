@@ -1,24 +1,15 @@
 import React from 'react';
 
-export const LoadingSpinner = ({ size = 'md', message = '' }) => {
+export default function LoadingSpinner({ size = 'md' }) {
   const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8">
-      <div className={`animate-spin rounded-full border-b-2 border-blue-600 ${sizeClasses[size]}`}></div>
-      {message && <p className="mt-4 text-gray-600">{message}</p>}
+    <div className="flex justify-center items-center">
+      <div className={`${sizeClasses[size]} border-4 border-blue-600 border-t-transparent rounded-full animate-spin`}></div>
     </div>
   );
-};
-
-export const PageLoader = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <LoadingSpinner size="lg" message="Loading..." />
-    </div>
-  );
-};
+}
