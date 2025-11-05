@@ -1,0 +1,25 @@
+{
+  "name": "proofpay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ProofPay \u2014 KYC-less payments using on-chain proof (UUPS upgradeable proxy).",
+  "scripts": {
+    "build": "hardhat compile",
+    "clean": "hardhat clean",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network base_sepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.ts --network base_mainnet",
+    "upgrade:sepolia": "hardhat run scripts/upgrade.ts --network base_sepolia",
+    "upgrade:mainnet": "hardhat run scripts/upgrade.ts --network base_mainnet"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.6",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.2",
+    "@openzeppelin/hardhat-upgrades": "^3.5.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2",
+    "hardhat": "^2.22.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
