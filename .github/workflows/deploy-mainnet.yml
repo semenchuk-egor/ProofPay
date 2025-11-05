@@ -15,9 +15,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+
+      - name: Node info
+        run: |
+          node -v
+          npm -v
 
       - name: Install
-        run: npm ci
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-fund --no-audit
+          fi
 
       - name: Build
         run: npm run build
