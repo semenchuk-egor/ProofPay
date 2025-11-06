@@ -1,8 +1,15 @@
 name: Deploy to Base Sepolia
 on:
   workflow_dispatch:
-  push:
-    branches: [ "dev", "test", "sepolia" ]
+    inputs:
+      force_deploy:
+        description: "Set to 1 to force new proxy deployment"
+        required: false
+        default: "0"
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   deploy:
@@ -10,6 +17,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Ensure deployments dir exists
+        run: mkdir -p deployments
 
       - name: Setup Node (cached)
         if: ${{ hashFiles('package-lock.json','npm-shrinkwrap.json','yarn.lock') != '' }}
@@ -23,11 +36,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Node info
-        run: |
-          node -v
-          npm -v
 
       - name: Install
         run: |
@@ -44,9 +52,8 @@ jobs:
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
-          BASE_MAINNET_RPC_URL: ""
-          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
           GITHUB_SHA: ${{ github.sha }}
+          FORCE_DEPLOY: ${{ github.event.inputs.force_deploy }}
         run: |
           npx hardhat run scripts/deploy.ts --network base_sepolia | tee deploy.log
           echo '### Deploy Output' >> $GITHUB_STEP_SUMMARY
@@ -61,12 +68,12 @@ jobs:
           path: deployments/
 
       - name: Commit deployments folder
-        if: ${{ always() }}
         run: |
           if [ -d deployments ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add deployments
-            git commit -m "chore(deployments): update for run $GITHUB_RUN_ID" || echo "No changes"
-            git push || echo "No push permissions"
+            git commit -m "chore(deployments): update for run $GITHUB_RUN_ID" || exit 0
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin HEAD:${{ github.ref_name }}
           fi
