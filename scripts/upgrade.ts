@@ -1,4 +1,4 @@
-import { ethers, upgrades } from "hardhat";
+import { ethers, upgrades, network as hre } from "hardhat";
 import fs from "fs";
 import path from "path";
 
@@ -13,26 +13,25 @@ function readLatestProxy(network: string): string | null {
 }
 
 async function main() {
-  const networkObj = await ethers.provider.getNetwork();
-  const network = networkObj.name || "unknown";
-  const fromFile = readLatestProxy(network);
+  const networkName = hre.name || hre.network.name || "unknown";
+  const fromFile = readLatestProxy(networkName);
   const PROXY_ADDRESS = process.env.PROXY_ADDRESS || fromFile || "";
   if (!PROXY_ADDRESS) throw new Error("Missing PROXY_ADDRESS and no deployments file found.");
 
-  const ProofPayV = await ethers.getContractFactory("ProofPay");
-  const upgraded = await upgrades.upgradeProxy(PROXY_ADDRESS, ProofPayV);
+  const Impl = await ethers.getContractFactory("ProofPay");
+  const upgraded = await upgrades.upgradeProxy(PROXY_ADDRESS, Impl);
   await upgraded.waitForDeployment();
 
   const proxyAddress = await upgraded.getAddress();
   const implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress);
 
-  const file = path.join(process.cwd(), "deployments", `${network}.json`);
+  const file = path.join(process.cwd(), "deployments", `${networkName}.json`);
   let current: any[] = [];
   if (fs.existsSync(file)) {
     try { current = JSON.parse(fs.readFileSync(file, "utf8")); } catch {}
   }
   current.push({
-    network,
+    network: networkName,
     proxy: proxyAddress,
     implementation: implAddress,
     upgrade: true,
