@@ -1,0 +1,11 @@
+[
+  {
+    "network": "base_sepolia",
+    "proxy": "0x73e517F9427042566b7a64B6772542ED57134F8B",
+    "implementation": null,
+    "deployer": "0xE027c4a3228A8390D4f15177bC78192C906D549e",
+    "txBlock": 33336036,
+    "timestamp": 1762440360,
+    "commit": "cf64089aa360dad93c790b122b12b2ab5da04afb"
+  }
+]
