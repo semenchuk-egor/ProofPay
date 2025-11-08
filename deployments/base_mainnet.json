@@ -2,19 +2,10 @@
   {
     "network": "base_mainnet",
     "proxy": "0xAe43B6acd5775304830C64aA1b945566b51f4A01",
-    "implementation": "0x49dF89b183843Adc0171C38EF70eaE783E5cE0d8",
+    "implementation": "0x49dF89b183843Adc0171C38EF70eaE783E5cEd08",
     "deployer": "0xE027c4a3228A8390D4f15177bC78192C906D549e",
-    "txBlock": 37899364,
+    "txBlock": 37899634,
     "timestamp": 1762588075,
-    "commit": "7f9fbdcbd0e60f04ae80f7043a71dfe614d7c8f4"
-  },
-  {
-    "network": "base_mainnet",
-    "proxy": "0x3A7862a37BDded819dDaa0E51F120875ebbC1fB9",
-    "implementation": "0x6878E132CfEeF93683D8C0e8462191d68E20654b",
-    "deployer": "0xE027c4a3228A8390D4f15177bC78192C906D549e",
-    "txBlock": 37899619,
-    "timestamp": 1762588585,
-    "commit": "0165f6484a4203a63e3ffde25293b2d2f16cb35f"
+    "commit": "7f9fbdbcbd0e60f04ae80f7043a71dfe614d7c8f4"
   }
 ]
