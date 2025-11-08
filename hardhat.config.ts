@@ -11,9 +11,7 @@ const BASE_MAINNET_RPC_URL = process.env.BASE_MAINNET_RPC_URL || "";
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.24",
-    settings: {
-      optimizer: { enabled: true, runs: 200 }
-    }
+    settings: { optimizer: { enabled: true, runs: 200 } }
   },
   networks: {
     base_sepolia: {
@@ -26,7 +24,6 @@ const config: HardhatUserConfig = {
     }
   },
   etherscan: {
-    // Optional: set BASESCAN API key here if you want verification
     apiKey: process.env.BASESCAN_API_KEY || ""
   }
 };
