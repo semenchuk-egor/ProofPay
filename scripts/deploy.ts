@@ -1,4 +1,4 @@
-import { ethers, upgrades, network as hre } from "hardhat";
+import { ethers, upgrades, network } from "hardhat";
 import fs from "fs";
 import path from "path";
 
@@ -11,43 +11,19 @@ function deploymentsPath(net: string) {
   return path.join(dir, `${net}.json`);
 }
 
-function readLatest(net: string): any | null {
-  const file = deploymentsPath(net);
-  if (!fs.existsSync(file)) return null;
+async function getImplSafe(proxy: string): Promise<string | null> {
   try {
-    const arr = JSON.parse(fs.readFileSync(file, "utf8"));
-    if (Array.isArray(arr) && arr.length > 0) return arr[arr.length - 1];
-  } catch {}
-  return null;
-}
-
-async function getImplSafe(addr: string): Promise<string> {
-  try {
-    return await upgrades.erc1967.getImplementationAddress(addr);
+    return await upgrades.erc1967.getImplementationAddress(proxy);
   } catch {
-    const raw = await ethers.provider.getStorage(addr, ERC1967_IMPL_SLOT);
+    const raw = await ethers.provider.getStorage(proxy, ERC1967_IMPL_SLOT);
     const a = "0x" + raw.slice(26);
-    if (a.toLowerCase() !== "0x0000000000000000000000000000000000000000") {
-      return ethers.getAddress(a);
-    }
-    return "";
+    return a.toLowerCase() === "0x0000000000000000000000000000000000000000" ? null : a;
   }
 }
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const networkName = hre.name || hre.network.name || "unknown";
-  const file = deploymentsPath(networkName);
-  const latest = readLatest(networkName);
-  const force = process.env.FORCE_DEPLOY === "1";
-
-  if (latest?.proxy && !force) {
-    const impl = latest.implementation || (await getImplSafe(latest.proxy));
-    console.log("PROXY_ADDRESS=", latest.proxy);
-    console.log("IMPLEMENTATION_ADDRESS=", impl || "unavailable_yet");
-    console.log(`Using existing proxy from ${file}`);
-    return;
-  }
+  const netName = network.name; // "base_mainnet" или "base_sepolia"
 
   const Factory = await ethers.getContractFactory("ProofPay");
   const proxy = await upgrades.deployProxy(Factory, [deployer.address], {
@@ -61,29 +37,25 @@ async function main() {
   const blockNumber = await ethers.provider.getBlockNumber();
   const block = await ethers.provider.getBlock(blockNumber);
 
-  let current: any[] = [];
+  const file = deploymentsPath(netName);
+  let arr: any[] = [];
   if (fs.existsSync(file)) {
-    try { current = JSON.parse(fs.readFileSync(file, "utf8")); } catch {}
+    try { arr = JSON.parse(fs.readFileSync(file, "utf8")); } catch {}
   }
-
-  current.push({
-    network: networkName,
+  arr.push({
+    network: netName,
     proxy: proxyAddress,
-    implementation: implAddress || null,
+    implementation: implAddress,
     deployer: deployer.address,
     txBlock: blockNumber,
     timestamp: Number(block?.timestamp || 0),
     commit: process.env.GITHUB_SHA || ""
   });
-
-  fs.writeFileSync(file, JSON.stringify(current, null, 2));
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
 
   console.log("PROXY_ADDRESS=", proxyAddress);
   console.log("IMPLEMENTATION_ADDRESS=", implAddress || "unavailable_yet");
   console.log(`Saved deployment to ${file}`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch((e) => { console.error(e); process.exit(1); });
