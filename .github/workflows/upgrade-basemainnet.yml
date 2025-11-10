@@ -29,8 +29,9 @@ jobs:
         run: npm run upgrade:mainnet
       - name: Verify implementation on Basescan
         run: |
-          IMPL=$(jq -r 'last(.[]).implementation' deployments/8453.json)
-          if [ "$IMPL" != "null" ] && [ -n "$IMPL" ]; then
+          node -e "const fs=require('fs');const p='deployments/8453.json';if(!fs.existsSync(p)){process.exit(0)}const j=JSON.parse(fs.readFileSync(p,'utf8'));const a=(Array.isArray(j)?j:[j]).slice(-1)[0]?.implementation||'';const x=a.trim();const ok=/^0x[0-9a-fA-F]{40}$/.test(x);if(!ok){console.log('skip verify: invalid implementation:', JSON.stringify(x));process.exit(0)}console.log(x)" > .impl
+          IMPL=$(cat .impl)
+          if [ -n "$IMPL" ]; then
             npx hardhat verify --network base_mainnet "$IMPL"
           fi
       - name: Tag release
