@@ -47,11 +47,30 @@ jobs:
       - name: Extract and sanitize implementation
         id: impl
         run: |
-          node -e "
-            const fs=require('fs');
-            const p='deployments/8453.json';
-            if(!fs.existsSync(p)){console.log('');process.exit(0)}
-            const j=JSON.parse(fs.readFileSync(p,'utf8'));
-            const last=(Array.isArray(j)?j:[j]).slice(-1)[0]||{};
-            const a=String(last.implementation||'').trim().replace(/\s+/g,'');
-            const ok=/^0x[0-9a-fA-F]{40}$/.test(a);
+          node scripts/ci-read-impl.js deployments/8453.json > .impl || true
+          echo "value=$(tr -d '\r\n' < .impl)" >> $GITHUB_OUTPUT
+
+      - name: Ensure code exists at implementation
+        id: hascode
+        if: steps.impl.outputs.value != ''
+        run: |
+          node -e "const {ethers}=require('ethers');const prov=new ethers.JsonRpcProvider(process.env.BASE_MAINNET_RPC_URL);prov.getCode('${{ steps.impl.outputs.value }}').then(c=>process.stdout.write(c&&c.length>2?'yes':''));" > .hascode
+          echo "value=$(tr -d '\r\n' < .hascode)" >> $GITHUB_OUTPUT
+
+      - name: Wait index
+        if: steps.hascode.outputs.value != ''
+        run: sleep 20
+
+      - name: Verify implementation on Basescan
+        if: steps.hascode.outputs.value != ''
+        continue-on-error: true
+        run: |
+          echo "Verifying: ${{ steps.impl.outputs.value }}"
+          npx hardhat compile --force
+          npx hardhat verify --network base_mainnet "${{ steps.impl.outputs.value }}" || \
+          npx hardhat verify --network base_mainnet --contract contracts/ProofPay.sol:ProofPay "${{ steps.impl.outputs.value }}"
+
+      - name: Tag pre-release
+        run: |
+          git tag -f ${{ inputs.tag }}
+          git push -f origin ${{ inputs.tag }}
