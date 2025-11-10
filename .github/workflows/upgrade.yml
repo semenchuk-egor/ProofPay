@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       network:
-        description: base or basesepolia
+        description: base_sepolia or base_mainnet
         required: true
-        default: basesepolia
+        default: base_sepolia
       tag:
-        description: release tag (e.g. v0.2.0)
+        description: release tag (e.g. v0.1.1)
         required: true
 
 jobs:
@@ -16,60 +16,36 @@ jobs:
     permissions:
       contents: write
     env:
-      BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
-      BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
       PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+      BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
       BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+      GITHUB_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: actions/setup-node@v4
         with:
-          version: stable
-      - name: Install deps
-        run: |
-          if [ ! -d lib ]; then mkdir -p lib; fi
-          [ -d lib/openzeppelin-contracts ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
-          [ -d lib/openzeppelin-contracts-upgradeable ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable lib/openzeppelin-contracts-upgradeable
-          [ -d lib/forge-std ] || git clone --depth=1 https://github.com/foundry-rs/forge-std lib/forge-std
+          node-version: 20
+      - run: npm ci
       - name: Build
-        run: forge build
-      - name: Read deployment
-        id: read
+        run: npm run build
+      - name: Run upgrade
         run: |
-          if [ "${{ github.event.inputs.network }}" = "base" ]; then
-            FILE="deployments/8453.json"
-            RPC="$BASE_MAINNET_RPC_URL"
-            CHAIN="base"
+          if [ "${{ inputs.network }}" = "base_mainnet" ]; then
+            npm run upgrade:mainnet
           else
-            FILE="deployments/84532.json"
-            RPC="$BASE_SEPOLIA_RPC_URL"
-            CHAIN="basesepolia"
+            npm run upgrade:sepolia
           fi
-          PROXY=$(jq -r .proxy "$FILE")
-          if [ -z "$PROXY" ] || [ "$PROXY" = "null" ]; then exit 1; fi
-          echo "file=$FILE" >> $GITHUB_OUTPUT
-          echo "rpc=$RPC" >> $GITHUB_OUTPUT
-          echo "chain=$CHAIN" >> $GITHUB_OUTPUT
-          echo "proxy=$PROXY" >> $GITHUB_OUTPUT
-      - name: Upgrade implementation
+      - name: Verify implementation
         run: |
-          PROXY_ADDRESS="${{ steps.read.outputs.proxy }}" \
-          forge script scripts/UpgradeUUPS.s.sol:UpgradeUUPS --broadcast --rpc-url "${{ steps.read.outputs.rpc }}" -vvvv
-      - name: Capture new implementation
+          if [ "${{ inputs.network }}" = "base_mainnet" ]; then
+            IMPL=$(jq -r 'last(.[]).implementation' deployments/8453.json)
+            npx hardhat verify --network base_mainnet "$IMPL"
+          else
+            IMPL=$(jq -r 'last(.[]).implementation' deployments/84532.json)
+            npx hardhat verify --network base_sepolia "$IMPL"
+          fi
+      - name: Tag release
         run: |
-          NEW=$(grep -m1 "NewImplementation" -R broadcast -n | sed -E 's/.*NewImplementation[^0-9a-fA-F]*([0x0-9a-fA-F]{42}).*/\1/' | head -n1)
-          FILE="${{ steps.read.outputs.file }}"
-          jq --arg impl "$NEW" '.implementation = $impl | .timestamp = (now|tojson)' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
-          cat "$FILE"
-      - name: Verify new implementation
-        run: |
-          ADDR=$(jq -r .implementation "${{ steps.read.outputs.file }}")
-          forge verify-contract --chain "${{ steps.read.outputs.chain }}" --watch --compiler-version v0.8.24+commit.e11b9ed9 "$ADDR" contracts/ProofPay.sol:ProofPay $BASESCAN_API_KEY
-      - name: Commit tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deployments
-          git commit -m "chore(upgrade): update implementation for ${{ github.event.inputs.network }}"
-          git tag "${{ github.event.inputs.tag }}"
-          git push --follow-tags
+          git tag -f ${{ inputs.tag }}
+          git push -f origin ${{ inputs.tag }}
