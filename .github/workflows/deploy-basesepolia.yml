@@ -1,0 +1,51 @@
+name: deploy-basesepolia
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.1)"
+        required: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
+      VERIFIER_ADDRESS: ${{ secrets.VERIFIER_ADDRESS }}
+      BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install deps
+        run: |
+          if [ ! -d lib ]; then mkdir -p lib; fi
+          [ -d lib/openzeppelin-contracts ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
+          [ -d lib/openzeppelin-contracts-upgradeable ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable lib/openzeppelin-contracts-upgradeable
+          [ -d lib/forge-std ] || git clone --depth=1 https://github.com/foundry-rs/forge-std lib/forge-std
+      - name: Build
+        run: forge build
+      - name: Deploy
+        run: forge script scripts/DeployUUPS.s.sol:DeployUUPS --broadcast --rpc-url $BASE_SEPOLIA_RPC_URL -vvvv | tee deploy.log
+      - name: Extract addresses
+        run: |
+          IMPL=$(grep -m1 "Implementation" deploy.log | awk '{print $2}')
+          PROXY=$(grep -m1 "Proxy" deploy.log | awk '{print $2}')
+          jq -n --arg impl "$IMPL" --arg proxy "$PROXY" --arg ts "$(date -u +%FT%TZ)" \
+            '{network:"basesepolia",chainId:84532,implementation:$impl,proxy:$proxy,timestamp:$ts}' > deployments/84532.json
+      - name: Verify proxy impl
+        run: |
+          ADDR=$(jq -r .implementation deployments/84532.json)
+          forge verify-contract --chain basesepolia --watch --compiler-version v0.8.24+commit.e11b9ed9 $ADDR contracts/ProofPay.sol:ProofPay $BASESCAN_API_KEY
+      - name: Commit deployments
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployments/84532.json
+          git commit -m "chore(deploy): add basesepolia addresses"
+          git tag "${{ github.event.inputs.tag }}"
+          git push --follow-tags
