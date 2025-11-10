@@ -1,0 +1,12 @@
+[
+  {
+    "network": "base_mainnet",
+    "chainId": 8453,
+    "proxy": "0xAe43B6acd5775304830C64aA1b945566b51f4A01",
+    "implementation": "0x49dF89b183843Adc0171C38EF70eaE783E5cEd08",
+    "deployer": "0xE027c4a3228A8390D4f15177bC78192C906D549e",
+    "txBlock": 37899634,
+    "timestamp": 1762588075,
+    "commit": "7f9fbdbcbd0e60f04ae80f7043a71dfe614d7c8f4"
+  }
+]
