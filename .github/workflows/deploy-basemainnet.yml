@@ -1,0 +1,81 @@
+name: deploy-mainnet
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: release tag (e.g. v0.1.0)
+        required: true
+      FORCE_DEPLOY:
+        description: true to deploy a new proxy even if one exists
+        required: false
+        default: "false"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
+      VERIFIER_ADDRESS: ${{ secrets.VERIFIER_ADDRESS }}
+      BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install deps
+        run: |
+          if [ ! -d lib ]; then mkdir -p lib; fi
+          [ -d lib/openzeppelin-contracts ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
+          [ -d lib/openzeppelin-contracts-upgradeable ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable lib/openzeppelin-contracts-upgradeable
+          [ -d lib/forge-std ] || git clone --depth=1 https://github.com/foundry-rs/forge-std lib/forge-std
+      - name: Ensure deployments file exists
+        run: |
+          mkdir -p deployments
+          if [ ! -f deployments/8453.json ]; then echo '[]' > deployments/8453.json; fi
+      - name: Read existing proxy
+        id: read
+        run: |
+          PROXY=$(jq -r 'last(.[]?).proxy // empty' deployments/8453.json)
+          echo "proxy=$PROXY" >> $GITHUB_OUTPUT
+      - name: Guard
+        if: ${{ steps.read.outputs.proxy != '' && inputs.FORCE_DEPLOY != 'true' }}
+        run: |
+          echo "Proxy already exists on Base Mainnet: ${{ steps.read.outputs.proxy }}. Skipping deploy."
+          echo "Use FORCE_DEPLOY=true to override."
+      - name: Build
+        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+        run: forge build
+      - name: Deploy
+        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+        run: |
+          forge script scripts/DeployUUPS.s.sol:DeployUUPS --broadcast --rpc-url "$BASE_MAINNET_RPC_URL" -vvvv | tee deploy.log
+      - name: Extract addresses
+        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+        run: |
+          IMPL=$(grep -m1 "Implementation" deploy.log | awk '{print $2}')
+          PROXY=$(grep -m1 "Proxy" deploy.log | awk '{print $2}')
+          COMMIT_SHA=$(git rev-parse HEAD)
+          TS=$(date -u +%s)
+          BLOCK=null
+          jq --arg net "base_mainnet" --argjson id 8453 --arg impl "$IMPL" --arg proxy "$PROXY" --arg dep "${{ secrets.OWNER_ADDRESS }}" --argjson blk $BLOCK --argjson ts $TS --arg c "$COMMIT_SHA" \
+            '. += [{"network":$net,"chainId":$id,"proxy":$proxy,"implementation":$impl,"deployer":$dep,"txBlock":$blk,"timestamp":$ts,"commit":$c}]' \
+            deployments/8453.json > deployments/8453.json.tmp && mv deployments/8453.json.tmp deployments/8453.json
+          cat deployments/8453.json
+      - name: Verify implementation
+        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+        run: |
+          ADDR=$(jq -r 'last(.[]).implementation' deployments/8453.json)
+          forge verify-contract --chain base --watch --compiler-version v0.8.24+commit.e11b9ed9 "$ADDR" contracts/ProofPay.sol:ProofPay $BASESCAN_API_KEY
+      - name: Commit and tag
+        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployments/8453.json
+          git commit -m "chore(deploy): add Base mainnet proxy and implementation to 8453.json"
+          git tag "${{ github.event.inputs.tag }}"
+          git push --follow-tags
