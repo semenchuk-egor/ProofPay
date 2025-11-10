@@ -1,0 +1,36 @@
+name: upgrade-basesepolia
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: release tag (e.g. v0.1.1)
+        required: true
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+      GITHUB_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Upgrade
+        run: npm run upgrade:sepolia
+      - name: Verify implementation
+        run: |
+          IMPL=$(jq -r 'last(.[]).implementation' deployments/84532.json)
+          npx hardhat verify --network base_sepolia "$IMPL"
+      - name: Tag release
+        run: |
+          git tag -f ${{ inputs.tag }}
+          git push -f origin ${{ inputs.tag }}
