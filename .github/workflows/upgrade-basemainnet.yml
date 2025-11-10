@@ -22,14 +22,16 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - name: Build
+      - name: Build (Hardhat)
         run: npm run build
-      - name: Upgrade
+      - name: Upgrade (Hardhat)
         run: npm run upgrade:mainnet
-      - name: Verify implementation
+      - name: Verify implementation on Basescan
         run: |
           IMPL=$(jq -r 'last(.[]).implementation' deployments/8453.json)
-          npx hardhat verify --network base_mainnet "$IMPL"
+          if [ "$IMPL" != "null" ] && [ -n "$IMPL" ]; then
+            npx hardhat verify --network base_mainnet "$IMPL"
+          fi
       - name: Tag release
         run: |
           git tag -f ${{ inputs.tag }}
