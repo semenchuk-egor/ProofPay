@@ -24,7 +24,7 @@ function readJson(file: string): Entry[] {
 
 async function main() {
   const [signer] = await ethers.getSigners();
-  const owner = process.env.OWNER_ADDRESS || signer.address;
+  const owner = process.env.OWNER_ADDRESS || (await signer.getAddress());
   const verifier = process.env.VERIFIER_ADDRESS || ethers.ZeroAddress;
   const chainId = Number((await ethers.provider.getNetwork()).chainId);
   const file = fileFor(chainId);
