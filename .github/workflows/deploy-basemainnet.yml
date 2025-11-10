@@ -31,11 +31,11 @@ jobs:
       - run: npm ci
       - name: Ensure deployments file
         run: mkdir -p deployments && [ -f deployments/8453.json ] || echo "[]" > deployments/8453.json
-      - name: Build
+      - name: Build (Hardhat)
         run: npm run build
-      - name: Deploy proxy
+      - name: Deploy proxy (Hardhat)
         run: npm run deploy:mainnet
-      - name: Verify implementation
+      - name: Verify implementation on Basescan
         run: |
           IMPL=$(jq -r 'last(.[]).implementation' deployments/8453.json)
           if [ "$IMPL" != "null" ] && [ -n "$IMPL" ]; then
