@@ -28,7 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
+      - name: Install dependencies
+        run: npm install
       - name: Ensure deployments file
         run: mkdir -p deployments && [ -f deployments/8453.json ] || echo "[]" > deployments/8453.json
       - name: Build (Hardhat)
