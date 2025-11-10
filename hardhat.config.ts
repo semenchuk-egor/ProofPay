@@ -13,6 +13,9 @@ const config: HardhatUserConfig = {
     version: "0.8.24",
     settings: { optimizer: { enabled: true, runs: 500 } }
   },
+  sourcify: {
+    enabled: true
+  },
   networks: {
     base_sepolia: {
       url: BASE_SEPOLIA_RPC_URL,
