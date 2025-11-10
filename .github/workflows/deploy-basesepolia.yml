@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: release tag (e.g. v0.1.0)
+        description: release tag (v0.1.0)
         required: true
       FORCE_DEPLOY:
-        description: true to deploy a new proxy even if one exists
+        description: set true only if you want a new proxy
         required: false
         default: "false"
 
@@ -33,9 +33,9 @@ jobs:
         run: mkdir -p deployments && [ -f deployments/84532.json ] || echo "[]" > deployments/84532.json
       - name: Build
         run: npm run build
-      - name: Deploy
+      - name: Deploy proxy
         run: npm run deploy:sepolia
-      - name: Verify implementation on Basescan
+      - name: Verify implementation
         run: |
           IMPL=$(jq -r 'last(.[]).implementation' deployments/84532.json)
           if [ "$IMPL" != "null" ] && [ -n "$IMPL" ]; then
