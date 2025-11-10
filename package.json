@@ -7,7 +7,9 @@
     "deploy:sepolia": "cross-env FORCE_DEPLOY=${FORCE_DEPLOY} hardhat run scripts/deploy.ts --network base_sepolia",
     "deploy:mainnet": "cross-env FORCE_DEPLOY=${FORCE_DEPLOY} hardhat run scripts/deploy.ts --network base_mainnet",
     "upgrade:sepolia": "hardhat run scripts/upgrade.ts --network base_sepolia",
-    "upgrade:mainnet": "hardhat run scripts/upgrade.ts --network base_mainnet"
+    "upgrade:mainnet": "hardhat run scripts/upgrade.ts --network base_mainnet",
+    "backfill:sepolia": "hardhat run scripts/backfill-impl.ts --network base_sepolia",
+    "backfill:mainnet": "hardhat run scripts/backfill-impl.ts --network base_mainnet"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
