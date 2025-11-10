@@ -21,61 +21,27 @@ jobs:
       OWNER_ADDRESS: ${{ secrets.OWNER_ADDRESS }}
       VERIFIER_ADDRESS: ${{ secrets.VERIFIER_ADDRESS }}
       BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+      FORCE_DEPLOY: ${{ inputs.FORCE_DEPLOY }}
+      GITHUB_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: actions/setup-node@v4
         with:
-          version: stable
-      - name: Install deps
-        run: |
-          if [ ! -d lib ]; then mkdir -p lib; fi
-          [ -d lib/openzeppelin-contracts ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
-          [ -d lib/openzeppelin-contracts-upgradeable ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable lib/openzeppelin-contracts-upgradeable
-          [ -d lib/forge-std ] || git clone --depth=1 https://github.com/foundry-rs/forge-std lib/forge-std
-      - name: Ensure deployments file exists
-        run: |
-          mkdir -p deployments
-          if [ ! -f deployments/84532.json ]; then echo '[]' > deployments/84532.json; fi
-      - name: Read existing proxy
-        id: read
-        run: |
-          PROXY=$(jq -r 'last(.[]?).proxy // empty' deployments/84532.json)
-          echo "proxy=$PROXY" >> $GITHUB_OUTPUT
-      - name: Guard
-        if: ${{ steps.read.outputs.proxy != '' && inputs.FORCE_DEPLOY != 'true' }}
-        run: |
-          echo "Proxy already exists on Base Sepolia: ${{ steps.read.outputs.proxy }}. Skipping deploy."
-          echo "Use FORCE_DEPLOY=true to override."
+          node-version: 20
+      - run: npm ci
+      - name: Ensure deployments file
+        run: mkdir -p deployments && [ -f deployments/84532.json ] || echo "[]" > deployments/84532.json
       - name: Build
-        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
-        run: forge build
+        run: npm run build
       - name: Deploy
-        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+        run: npm run deploy:sepolia
+      - name: Verify implementation on Basescan
         run: |
-          forge script scripts/DeployUUPS.s.sol:DeployUUPS --broadcast --rpc-url "$BASE_SEPOLIA_RPC_URL" -vvvv | tee deploy.log
-      - name: Extract addresses
-        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
+          IMPL=$(jq -r 'last(.[]).implementation' deployments/84532.json)
+          if [ "$IMPL" != "null" ] && [ -n "$IMPL" ]; then
+            npx hardhat verify --network base_sepolia "$IMPL"
+          fi
+      - name: Tag pre-release
         run: |
-          IMPL=$(grep -m1 "Implementation" deploy.log | awk '{print $2}')
-          PROXY=$(grep -m1 "Proxy" deploy.log | awk '{print $2}')
-          COMMIT_SHA=$(git rev-parse HEAD)
-          TS=$(date -u +%s)
-          BLOCK=null
-          jq --arg net "base_sepolia" --argjson id 84532 --arg impl "$IMPL" --arg proxy "$PROXY" --arg dep "${{ secrets.OWNER_ADDRESS }}" --argjson blk $BLOCK --argjson ts $TS --arg c "$COMMIT_SHA" \
-            '. += [{"network":$net,"chainId":$id,"proxy":$proxy,"implementation":$impl,"deployer":$dep,"txBlock":$blk,"timestamp":$ts,"commit":$c}]' \
-            deployments/84532.json > deployments/84532.json.tmp && mv deployments/84532.json.tmp deployments/84532.json
-          cat deployments/84532.json
-      - name: Verify implementation
-        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
-        run: |
-          ADDR=$(jq -r 'last(.[]).implementation' deployments/84532.json)
-          forge verify-contract --chain basesepolia --watch --compiler-version v0.8.24+commit.e11b9ed9 "$ADDR" contracts/ProofPay.sol:ProofPay $BASESCAN_API_KEY
-      - name: Commit and tag
-        if: ${{ steps.read.outputs.proxy == '' || inputs.FORCE_DEPLOY == 'true' }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deployments/84532.json
-          git commit -m "chore(deploy): add Base Sepolia proxy and implementation to 84532.json"
-          git tag "${{ github.event.inputs.tag }}"
-          git push --follow-tags
+          git tag -f ${{ inputs.tag }}
+          git push -f origin ${{ inputs.tag }}
