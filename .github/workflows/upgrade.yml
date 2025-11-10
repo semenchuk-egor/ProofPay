@@ -1,0 +1,75 @@
+name: upgrade
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: base or basesepolia
+        required: true
+        default: basesepolia
+      tag:
+        description: release tag (e.g. v0.2.0)
+        required: true
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
+      BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install deps
+        run: |
+          if [ ! -d lib ]; then mkdir -p lib; fi
+          [ -d lib/openzeppelin-contracts ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts lib/openzeppelin-contracts
+          [ -d lib/openzeppelin-contracts-upgradeable ] || git clone --depth=1 https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable lib/openzeppelin-contracts-upgradeable
+          [ -d lib/forge-std ] || git clone --depth=1 https://github.com/foundry-rs/forge-std lib/forge-std
+      - name: Build
+        run: forge build
+      - name: Read deployment
+        id: read
+        run: |
+          if [ "${{ github.event.inputs.network }}" = "base" ]; then
+            FILE="deployments/8453.json"
+            RPC="$BASE_MAINNET_RPC_URL"
+            CHAIN="base"
+          else
+            FILE="deployments/84532.json"
+            RPC="$BASE_SEPOLIA_RPC_URL"
+            CHAIN="basesepolia"
+          fi
+          PROXY=$(jq -r .proxy "$FILE")
+          if [ -z "$PROXY" ] || [ "$PROXY" = "null" ]; then exit 1; fi
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+          echo "rpc=$RPC" >> $GITHUB_OUTPUT
+          echo "chain=$CHAIN" >> $GITHUB_OUTPUT
+          echo "proxy=$PROXY" >> $GITHUB_OUTPUT
+      - name: Upgrade implementation
+        run: |
+          PROXY_ADDRESS="${{ steps.read.outputs.proxy }}" \
+          forge script scripts/UpgradeUUPS.s.sol:UpgradeUUPS --broadcast --rpc-url "${{ steps.read.outputs.rpc }}" -vvvv
+      - name: Capture new implementation
+        run: |
+          NEW=$(grep -m1 "NewImplementation" -R broadcast -n | sed -E 's/.*NewImplementation[^0-9a-fA-F]*([0x0-9a-fA-F]{42}).*/\1/' | head -n1)
+          FILE="${{ steps.read.outputs.file }}"
+          jq --arg impl "$NEW" '.implementation = $impl | .timestamp = (now|tojson)' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
+          cat "$FILE"
+      - name: Verify new implementation
+        run: |
+          ADDR=$(jq -r .implementation "${{ steps.read.outputs.file }}")
+          forge verify-contract --chain "${{ steps.read.outputs.chain }}" --watch --compiler-version v0.8.24+commit.e11b9ed9 "$ADDR" contracts/ProofPay.sol:ProofPay $BASESCAN_API_KEY
+      - name: Commit tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployments
+          git commit -m "chore(upgrade): update implementation for ${{ github.event.inputs.network }}"
+          git tag "${{ github.event.inputs.tag }}"
+          git push --follow-tags
