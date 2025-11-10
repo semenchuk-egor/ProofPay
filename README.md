@@ -1,21 +1,24 @@
 # ProofPay
 
-Payments without KYC using on-chain proofs on Base. Upgradeable UUPS smart contract + zk-proof verification interface. Built and deployed via GitHub Actions only.
+Payments without KYC using on-chain proofs on Base. Upgradeable UUPS smart contract, zk-proof verifier interface. Built via GitHub Actions only.
 
 ## Networks
 
-- Base Mainnet (8453) — planned
-- Base Sepolia (84532) — deploy via workflow
+- Base Mainnet (8453) — deployed; see `deployments/8453.json`
+- Base Sepolia (84532) — deployed; see `deployments/84532.json`
 
-## Contracts
+## Contract
 
-- `ProofPay` — UUPS upgradeable, escrow-like payments with zk-proof gated settlement.
+- `ProofPay` — UUPS upgradeable escrow-like payments gated by zk-proof verification.
 
-## Deploy
+## Workflows
 
-- Configure secrets: `BASE_SEPOLIA_RPC_URL`, `PRIVATE_KEY`, `OWNER_ADDRESS`, `VERIFIER_ADDRESS`, `BASESCAN_API_KEY`.
-- Run workflow **deploy-basesepolia** (manual).
+- `upgrade` — upgrade implementation on Base or Base Sepolia using the existing proxy from `deployments/*.json`. Produces a tag and updates `implementation` + `timestamp`.
 
-## Verify
+## Setup
 
-- Auto verification via Basescan API (see workflow). Guides and explorer: Base docs / Basescan. 
+Secrets: `BASE_MAINNET_RPC_URL`, `BASE_SEPOLIA_RPC_URL`, `PRIVATE_KEY`, `BASESCAN_API_KEY`.
+
+## Topics
+
+base base-mainnet base-sepolia onchain uups upgrades zk-proof payments solidity foundry github-actions basescan
