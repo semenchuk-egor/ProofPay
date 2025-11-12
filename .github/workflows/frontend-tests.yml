@@ -1,0 +1,22 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches: [ main, proofpay_dev ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - run: |
+        cd frontend
+        yarn install
+        yarn test --watchAll=false
