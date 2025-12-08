@@ -1,5 +1,7 @@
 [profile.default]
-src = "."
+src = "core"
+test = "test"
+script = "script"
 out = "out"
 libs = ["lib"]
 solc = "0.8.20"
@@ -11,12 +13,9 @@ remappings = [
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
     "forge-std/=lib/forge-std/src/"
 ]
-exclude = [
-    "lib/openzeppelin-contracts/certora/**",
-    "lib/openzeppelin-contracts-upgradeable/certora/**",
-    "lib/openzeppelin-contracts/test/**",
-    "lib/openzeppelin-contracts-upgradeable/test/**"
-]
+# Note: Foundry doesn't support 'exclude' option, use src/test/script paths instead
+build_info = true
+extra_output = ["storageLayout"]
 
 [rpc_endpoints]
 base = "https://mainnet.base.org"

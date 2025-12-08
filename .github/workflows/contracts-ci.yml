@@ -30,6 +30,15 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Clean up OpenZeppelin test and certora files
+        run: |
+          rm -rf contracts/lib/openzeppelin-contracts/certora
+          rm -rf contracts/lib/openzeppelin-contracts/test
+          rm -rf contracts/lib/openzeppelin-contracts/mocks
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/certora
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/test
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/mocks
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
