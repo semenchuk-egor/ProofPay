@@ -59,7 +59,7 @@ jobs:
   deploy-sepolia:
     name: Deploy to Base Sepolia
     runs-on: ubuntu-latest
-    if: github.event.inputs.deploy == 'true' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
+    if: github.event.inputs.deploy == 'true'
     needs: [test]
     environment: base-sepolia
     steps:
