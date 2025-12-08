@@ -16,10 +16,24 @@ ProofPay is a decentralized payment platform that leverages [Ethereum Attestatio
 ## 🏗️ Architecture
 
 ### Smart Contracts (Solidity + Foundry)
+
+**Core Contracts:**
+- **PolicyManager**: Manages payment policies with flexible proof requirements
+- **SessionManager**: Handles payment session lifecycle with proof verification
 - **PaymentValidator**: Core contract for attestation-based payment validation
 - **ProofToken**: ERC-20 utility token for platform rewards
+
+**Extensions:**
 - **PaymentBatch**: Execute batch payments efficiently
 - **PaymentEscrow**: Secure escrow with attestation validation
+- **TokenStaking**: Stake tokens for rewards
+
+**Key Features:**
+- Multiple proof types (EAS attestations, ZK proofs, signatures)
+- Policy-based verification with trusted issuers
+- Session lifecycle management (Pending → Verified → Executed)
+- Automatic expiration and refund handling
+- UUPS upgradeable proxy pattern
 
 ### Backend (Python + FastAPI)
 - RESTful API for user and payment management
@@ -38,8 +52,63 @@ ProofPay is a decentralized payment platform that leverages [Ethereum Attestatio
 ### Prerequisites
 - Node.js v18+
 - Python 3.11+
-- Foundry (for smart contracts)
+- [Foundry](https://getfoundry.sh/) (for smart contracts)
 - MongoDB (for backend)
+
+### Using ProofPay
+
+**1. Create a Payment Policy:**
+```solidity
+// Policy with KYC requirement
+uint256 policyId = policyManager.createPolicy(
+    "KYC Required",
+    "Payments require valid KYC attestation",
+    block.timestamp,      // Valid from now
+    0,                    // No expiration
+    1                     // Minimum 1 proof required
+);
+
+// Add EAS attestation requirement
+policyManager.addProofRequirement(
+    policyId,
+    ProofType.EASAttestation,
+    kycSchemaUID,
+    trustedIssuer,
+    true,                // Required
+    30 days             // Validity period
+);
+```
+
+**2. Create a Payment Session:**
+```solidity
+// Create session with 1 ETH payment
+bytes32 sessionId = sessionManager.createSession{value: 1 ether}(
+    payeeAddress,
+    address(0),         // Native ETH
+    1 ether,
+    policyId,
+    block.timestamp + 7 days,  // Expires in 7 days
+    "Payment for services"
+);
+```
+
+**3. Attach Proof and Execute:**
+```solidity
+// Attach EAS attestation
+sessionManager.attachProof(
+    sessionId,
+    ProofType.EASAttestation,
+    attestationUID,
+    issuer,
+    0                  // No expiration
+);
+
+// Verify session
+bool verified = sessionManager.verifySession(sessionId);
+
+// Execute payment
+sessionManager.executeSession(sessionId);
+```
 
 ### Installation
 
@@ -133,13 +202,61 @@ yarn test
 
 ## 🌐 Deployment
 
+### Base Sepolia (Testnet)
+- **Network**: Base Sepolia
+- **Chain ID**: 84532
+- **RPC**: https://sepolia.base.org
+- **Explorer**: https://sepolia.basescan.org
+- **EAS Registry**: `0x4200000000000000000000000000000000000021`
+
+**Contract Addresses** (Testnet):
+```
+PolicyManager Proxy:  (will be deployed)
+SessionManager Proxy: (will be deployed)
+```
+
 ### Base Mainnet
 - **Network**: Base Mainnet
 - **Chain ID**: 8453
 - **RPC**: https://mainnet.base.org
 - **Explorer**: https://basescan.org
+- **EAS Registry**: `0x4200000000000000000000000000000000000021`
 
-Contract addresses will be published after mainnet deployment.
+**Contract Addresses** (Mainnet):
+```
+PolicyManager Proxy:  (coming soon)
+SessionManager Proxy: (coming soon)
+```
+
+### Deployment Instructions
+
+1. **Set up environment variables:**
+```bash
+export PRIVATE_KEY="your-private-key"
+export BASE_SEPOLIA_RPC_URL="https://sepolia.base.org"
+```
+
+2. **Deploy to Base Sepolia:**
+```bash
+cd contracts
+forge script script/DeployBase.s.sol:DeployBase \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --broadcast \
+  --verify \
+  -vvvv
+```
+
+3. **Deploy to Base Mainnet:**
+```bash
+export BASE_MAINNET_RPC_URL="https://mainnet.base.org"
+forge script script/DeployBase.s.sol:DeployBase \
+  --rpc-url $BASE_MAINNET_RPC_URL \
+  --broadcast \
+  --verify \
+  -vvvv
+```
+
+Deployment info is automatically saved to `deployments/` directory.
 
 ## 🤝 Contributing
 

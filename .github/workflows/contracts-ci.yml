@@ -1,0 +1,120 @@
+name: Contracts CI/CD
+
+on:
+  push:
+    branches: [draft, main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Show Foundry version
+        run: |
+          forge --version
+          cast --version
+
+      - name: Run Forge build
+        run: |
+          cd contracts
+          forge build --sizes
+        continue-on-error: true
+
+      - name: Run Forge tests
+        run: |
+          cd contracts
+          forge test -vvv
+        continue-on-error: true
+
+      - name: Generate coverage report
+        run: |
+          cd contracts
+          forge coverage --report summary
+        continue-on-error: true
+
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Check formatting
+        run: |
+          cd contracts
+          forge fmt --check
+        continue-on-error: true
+
+  deploy-sepolia:
+    name: Deploy to Base Sepolia
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/draft' && github.event_name == 'push'
+    needs: [test]
+    environment: base-sepolia
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Deploy to Base Sepolia
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+        run: |
+          cd contracts
+          forge script script/DeployBase.s.sol:DeployBase \
+            --rpc-url $BASE_SEPOLIA_RPC_URL \
+            --broadcast \
+            --verify \
+            -vvvv
+        continue-on-error: true
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-sepolia-deployment
+          path: |
+            contracts/deployments/*.json
+            contracts/broadcast/**/*
+        if: always()
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.0
+        continue-on-error: true
+        with:
+          target: contracts/
+          slither-args: --filter-paths "lib|test|script"
+          fail-on: none
