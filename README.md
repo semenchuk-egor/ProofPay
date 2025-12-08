@@ -7,11 +7,11 @@ ProofPay is a decentralized payment platform that leverages [Ethereum Attestatio
 ## 🌟 Key Features
 
 - **Privacy-Preserving**: Use on-chain attestations instead of sharing personal documents
-- **Secure**: Smart contract-based validation and escrow mechanisms
+- **Policy-Based Verification**: Flexible proof requirements with trusted issuers
+- **Session Management**: Complete lifecycle from creation to execution
 - **Fast & Cheap**: Built on Base L2 for lightning-fast transactions with minimal fees
 - **Upgradeable**: All contracts use UUPS proxy pattern for future improvements
-- **Batch Payments**: Send to multiple recipients in a single transaction
-- **Escrow Support**: Secure escrow for conditional payments
+- **Multiple Proof Types**: Support for EAS attestations, ZK proofs, and signatures
 
 ## 🏗️ Architecture
 
@@ -20,13 +20,6 @@ ProofPay is a decentralized payment platform that leverages [Ethereum Attestatio
 **Core Contracts:**
 - **PolicyManager**: Manages payment policies with flexible proof requirements
 - **SessionManager**: Handles payment session lifecycle with proof verification
-- **PaymentValidator**: Core contract for attestation-based payment validation
-- **ProofToken**: ERC-20 utility token for platform rewards
-
-**Extensions:**
-- **PaymentBatch**: Execute batch payments efficiently
-- **PaymentEscrow**: Secure escrow with attestation validation
-- **TokenStaking**: Stake tokens for rewards
 
 **Key Features:**
 - Multiple proof types (EAS attestations, ZK proofs, signatures)
@@ -159,7 +152,7 @@ yarn start
 ```bash
 cd contracts
 anvil  # Start local node
-forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast
+forge script script/DeployBase.s.sol --rpc-url http://localhost:8545 --broadcast
 ```
 
 ## 📚 Documentation

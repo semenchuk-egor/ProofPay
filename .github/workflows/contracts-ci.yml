@@ -10,13 +10,20 @@ on:
     branches: [main]
     paths:
       - 'contracts/**'
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to testnet'
+        required: false
+        type: boolean
+        default: false
 
 env:
   FOUNDRY_PROFILE: ci
 
 jobs:
   test:
-    name: Run Tests
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,28 +44,11 @@ jobs:
         run: |
           cd contracts
           forge build --sizes
-        continue-on-error: true
 
       - name: Run Forge tests
         run: |
           cd contracts
-          forge test -vvv
-        continue-on-error: true
-
-      - name: Generate coverage report
-        run: |
-          cd contracts
-          forge coverage --report summary
-        continue-on-error: true
-
-  lint:
-    name: Lint and Format Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+          forge test -vv
 
       - name: Check formatting
         run: |
@@ -69,7 +59,7 @@ jobs:
   deploy-sepolia:
     name: Deploy to Base Sepolia
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/draft' && github.event_name == 'push'
+    if: github.event.inputs.deploy == 'true' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
     needs: [test]
     environment: base-sepolia
     steps:
@@ -91,7 +81,6 @@ jobs:
             --broadcast \
             --verify \
             -vvvv
-        continue-on-error: true
 
       - name: Upload deployment artifacts
         uses: actions/upload-artifact@v4
@@ -101,20 +90,3 @@ jobs:
             contracts/deployments/*.json
             contracts/broadcast/**/*
         if: always()
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Run Slither
-        uses: crytic/slither-action@v0.3.0
-        continue-on-error: true
-        with:
-          target: contracts/
-          slither-args: --filter-paths "lib|test|script"
-          fail-on: none
