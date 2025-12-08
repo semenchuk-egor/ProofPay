@@ -30,9 +30,9 @@ contract PaymentValidator is OwnableUpgradeable, UUPSUpgradeable {
         address _easAddress,
         bytes32 _kycSchemaUID
     ) public initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
-        
+
         easAddress = _easAddress;
         kycSchemaUID = _kycSchemaUID;
     }

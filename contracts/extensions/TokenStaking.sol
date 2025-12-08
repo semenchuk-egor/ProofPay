@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract TokenStaking is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
@@ -24,7 +24,7 @@ contract TokenStaking is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpg
     event RewardClaimed(address indexed user, uint256 reward);
     
     function initialize(address _stakingToken, uint256 _rewardRate) public initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         stakingToken = IERC20(_stakingToken);

@@ -27,7 +27,7 @@ contract PaymentBatch is OwnableUpgradeable, UUPSUpgradeable {
     }
     
     function initialize(address _validator) public initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         validator = PaymentValidator(_validator);
     }

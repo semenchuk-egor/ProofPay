@@ -24,10 +24,10 @@ contract PaymentProofNFT is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public initializer {
+    function initialize() public initializer {
         __ERC721_init("PaymentProof", "PPROOF");
         __ERC721URIStorage_init();
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         _nextTokenId = 1;
     }

@@ -31,9 +31,9 @@ contract ProofToken is
     function initialize() public initializer {
         __ERC20_init("ProofPay Token", "PROOF");
         __ERC20Burnable_init();
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
-        
+
         // Mint initial supply to deployer
         _mint(msg.sender, 100_000_000 * 10**18); // 100 million initial
     }

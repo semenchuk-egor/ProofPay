@@ -18,8 +18,8 @@ contract AttestationVerifier is Initializable, OwnableUpgradeable, UUPSUpgradeab
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, address _easContract, bytes32 _paymentSchemaUID) public initializer {
-        __Ownable_init(initialOwner);
+    function initialize(address _easContract, bytes32 _paymentSchemaUID) public initializer {
+        __Ownable_init();
         __UUPSUpgradeable_init();
         easContract = IEAS(_easContract);
         paymentSchemaUID = _paymentSchemaUID;

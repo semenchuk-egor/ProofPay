@@ -6,6 +6,17 @@ solc = "0.8.20"
 optimizer = true
 optimizer_runs = 200
 via_ir = false
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "forge-std/=lib/forge-std/src/"
+]
+exclude = [
+    "lib/openzeppelin-contracts/certora/**",
+    "lib/openzeppelin-contracts-upgradeable/certora/**",
+    "lib/openzeppelin-contracts/test/**",
+    "lib/openzeppelin-contracts-upgradeable/test/**"
+]
 
 [rpc_endpoints]
 base = "https://mainnet.base.org"

@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./AttestationVerifier.sol";
 
 contract PaymentProcessor is Initializable, OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
@@ -33,8 +33,8 @@ contract PaymentProcessor is Initializable, OwnableUpgradeable, UUPSUpgradeable,
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, address _verifier, uint256 _platformFee, address _feeCollector) public initializer {
-        __Ownable_init(initialOwner);
+    function initialize(address _verifier, uint256 _platformFee, address _feeCollector) public initializer {
+        __Ownable_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         verifier = AttestationVerifier(_verifier);

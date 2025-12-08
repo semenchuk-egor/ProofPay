@@ -14,7 +14,7 @@ contract AirdropDistributor is OwnableUpgradeable, UUPSUpgradeable {
     event Claimed(address indexed account, uint256 amount);
     
     function initialize(address _token, bytes32 _merkleRoot) public initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __UUPSUpgradeable_init();
         token = IERC20(_token);
         merkleRoot = _merkleRoot;

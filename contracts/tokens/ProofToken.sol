@@ -16,12 +16,12 @@ contract ProofToken is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner) public initializer {
+    function initialize() public initializer {
         __ERC20_init("ProofToken", "PROOF");
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __UUPSUpgradeable_init();
-        
-        _mint(initialOwner, 1_000_000 * 10**decimals());
+
+        _mint(msg.sender, 1_000_000 * 10**decimals());
     }
 
     function mint(address to, uint256 amount) external onlyOwner {
