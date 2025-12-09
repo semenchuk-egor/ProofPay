@@ -24,10 +24,9 @@ contract MockEAS {
         uint64 time;
         uint64 expirationTime;
         uint64 revocationTime;
-        bytes32 refUID;
         address recipient;
         address attester;
-        bool revocable;
+        bytes32 refUID;
         bytes data;
     }
 
@@ -45,10 +44,9 @@ contract MockEAS {
             time: uint64(block.timestamp),
             expirationTime: 0,
             revocationTime: 0,
-            refUID: bytes32(0),
             recipient: recipient,
             attester: attester,
-            revocable: true,
+            refUID: bytes32(0),
             data: ""
         });
     }
