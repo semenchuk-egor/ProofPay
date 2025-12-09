@@ -102,10 +102,26 @@ jobs:
             --rpc-url "$BASE_SEPOLIA_RPC_URL" \
             --private-key "$PRIVATE_KEY" \
             --broadcast \
-            --verify \
-            --etherscan-api-key "$BASESCAN_API_KEY" \
             --legacy \
             -vvvv
+
+          echo "Waiting 30s for transactions to be indexed..."
+          sleep 30
+
+          echo "Verifying contracts..."
+          forge verify-contract \
+            $(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress') \
+            core/PolicyManager.sol:PolicyManager \
+            --chain-id 84532 \
+            --etherscan-api-key "$BASESCAN_API_KEY" \
+            --watch || true
+
+          forge verify-contract \
+            $(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress') \
+            core/SessionManager.sol:SessionManager \
+            --chain-id 84532 \
+            --etherscan-api-key "$BASESCAN_API_KEY" \
+            --watch || true
 
       - name: Deploy to Base Mainnet
         if: github.event.inputs.network == 'mainnet'
@@ -129,10 +145,26 @@ jobs:
             --rpc-url "$BASE_MAINNET_RPC_URL" \
             --private-key "$PRIVATE_KEY" \
             --broadcast \
-            --verify \
-            --etherscan-api-key "$BASESCAN_API_KEY" \
             --legacy \
             -vvvv
+
+          echo "Waiting 30s for transactions to be indexed..."
+          sleep 30
+
+          echo "Verifying contracts..."
+          forge verify-contract \
+            $(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress') \
+            core/PolicyManager.sol:PolicyManager \
+            --chain-id 8453 \
+            --etherscan-api-key "$BASESCAN_API_KEY" \
+            --watch || true
+
+          forge verify-contract \
+            $(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress') \
+            core/SessionManager.sol:SessionManager \
+            --chain-id 8453 \
+            --etherscan-api-key "$BASESCAN_API_KEY" \
+            --watch || true
 
       - name: Upload deployment artifacts
         uses: actions/upload-artifact@v4

@@ -1,0 +1,15 @@
+{
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "contracts": {
+    "PolicyManager": {
+      "implementation": "",
+      "proxy": ""
+    },
+    "SessionManager": {
+      "implementation": "",
+      "proxy": ""
+    },
+    "EASRegistry": "0x4200000000000000000000000000000000000021"
+  }
+}
