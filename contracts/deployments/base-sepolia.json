@@ -1,15 +1,20 @@
 {
   "network": "base-sepolia",
   "chainId": 84532,
+  "deployer": "0xE027c4a3228A8390D4f15177bC78192C906D549e",
   "contracts": {
     "PolicyManager": {
-      "implementation": "",
-      "proxy": ""
+      "implementation": "0xe9E4238FbAE0cB17154d6DEb3929ddA44F5b6449",
+      "proxy": "0xC879C9fe4Dd2ec91125074CE98E64b44218EB970"
     },
     "SessionManager": {
-      "implementation": "",
-      "proxy": ""
+      "implementation": "0x352FE3144fa27233c678b9ea5FfBf0C7eC14301F",
+      "proxy": "0x4c03a6C94D75933AA7793489CFAf32b646A36887"
     },
     "EASRegistry": "0x4200000000000000000000000000000000000021"
+  },
+  "links": {
+    "PolicyManager": "https://sepolia.basescan.org/address/0xC879C9fe4Dd2ec91125074CE98E64b44218EB970",
+    "SessionManager": "https://sepolia.basescan.org/address/0x4c03a6C94D75933AA7793489CFAf32b646A36887"
   }
 }

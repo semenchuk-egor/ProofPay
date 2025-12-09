@@ -218,8 +218,9 @@ EAS Registry:         0x4200000000000000000000000000000000000021
 
 **Contract Addresses** (Mainnet):
 ```
-PolicyManager Proxy:  (coming soon)
-SessionManager Proxy: (coming soon)
+PolicyManager Proxy:  0x553c710b560344ad6B9e674BC963120b0b9DC571
+SessionManager Proxy: 0x2dDE05bfaB88Ce59Eebc317Dd81E05288bBcbF84
+EAS Registry:         0x4200000000000000000000000000000000000021
 ```
 
 ### Deployment Instructions
