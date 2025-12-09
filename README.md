@@ -7,19 +7,26 @@ ProofPay is a decentralized payment platform that leverages [Ethereum Attestatio
 ## 🌟 Key Features
 
 - **Privacy-Preserving**: Use on-chain attestations instead of sharing personal documents
-- **Secure**: Smart contract-based validation and escrow mechanisms
+- **Policy-Based Verification**: Flexible proof requirements with trusted issuers
+- **Session Management**: Complete lifecycle from creation to execution
 - **Fast & Cheap**: Built on Base L2 for lightning-fast transactions with minimal fees
 - **Upgradeable**: All contracts use UUPS proxy pattern for future improvements
-- **Batch Payments**: Send to multiple recipients in a single transaction
-- **Escrow Support**: Secure escrow for conditional payments
+- **Multiple Proof Types**: Support for EAS attestations, ZK proofs, and signatures
 
 ## 🏗️ Architecture
 
 ### Smart Contracts (Solidity + Foundry)
-- **PaymentValidator**: Core contract for attestation-based payment validation
-- **ProofToken**: ERC-20 utility token for platform rewards
-- **PaymentBatch**: Execute batch payments efficiently
-- **PaymentEscrow**: Secure escrow with attestation validation
+
+**Core Contracts:**
+- **PolicyManager**: Manages payment policies with flexible proof requirements
+- **SessionManager**: Handles payment session lifecycle with proof verification
+
+**Key Features:**
+- Multiple proof types (EAS attestations, ZK proofs, signatures)
+- Policy-based verification with trusted issuers
+- Session lifecycle management (Pending → Verified → Executed)
+- Automatic expiration and refund handling
+- UUPS upgradeable proxy pattern
 
 ### Backend (Python + FastAPI)
 - RESTful API for user and payment management
@@ -38,8 +45,63 @@ ProofPay is a decentralized payment platform that leverages [Ethereum Attestatio
 ### Prerequisites
 - Node.js v18+
 - Python 3.11+
-- Foundry (for smart contracts)
+- [Foundry](https://getfoundry.sh/) (for smart contracts)
 - MongoDB (for backend)
+
+### Using ProofPay
+
+**1. Create a Payment Policy:**
+```solidity
+// Policy with KYC requirement
+uint256 policyId = policyManager.createPolicy(
+    "KYC Required",
+    "Payments require valid KYC attestation",
+    block.timestamp,      // Valid from now
+    0,                    // No expiration
+    1                     // Minimum 1 proof required
+);
+
+// Add EAS attestation requirement
+policyManager.addProofRequirement(
+    policyId,
+    ProofType.EASAttestation,
+    kycSchemaUID,
+    trustedIssuer,
+    true,                // Required
+    30 days             // Validity period
+);
+```
+
+**2. Create a Payment Session:**
+```solidity
+// Create session with 1 ETH payment
+bytes32 sessionId = sessionManager.createSession{value: 1 ether}(
+    payeeAddress,
+    address(0),         // Native ETH
+    1 ether,
+    policyId,
+    block.timestamp + 7 days,  // Expires in 7 days
+    "Payment for services"
+);
+```
+
+**3. Attach Proof and Execute:**
+```solidity
+// Attach EAS attestation
+sessionManager.attachProof(
+    sessionId,
+    ProofType.EASAttestation,
+    attestationUID,
+    issuer,
+    0                  // No expiration
+);
+
+// Verify session
+bool verified = sessionManager.verifySession(sessionId);
+
+// Execute payment
+sessionManager.executeSession(sessionId);
+```
 
 ### Installation
 
@@ -90,7 +152,7 @@ yarn start
 ```bash
 cd contracts
 anvil  # Start local node
-forge script script/DeployAll.s.sol --rpc-url http://localhost:8545 --broadcast
+forge script script/DeployBase.s.sol --rpc-url http://localhost:8545 --broadcast
 ```
 
 ## 📚 Documentation
@@ -133,13 +195,63 @@ yarn test
 
 ## 🌐 Deployment
 
+### Base Sepolia (Testnet)
+- **Network**: Base Sepolia
+- **Chain ID**: 84532
+- **RPC**: https://sepolia.base.org
+- **Explorer**: https://sepolia.basescan.org
+- **EAS Registry**: `0x4200000000000000000000000000000000000021`
+
+**Contract Addresses** (Testnet):
+```
+PolicyManager Proxy:  0xC879C9fe4Dd2ec91125074CE98E64b44218EB970
+SessionManager Proxy: 0x4c03a6C94D75933AA7793489CFAf32b646A36887
+EAS Registry:         0x4200000000000000000000000000000000000021
+```
+
 ### Base Mainnet
 - **Network**: Base Mainnet
 - **Chain ID**: 8453
 - **RPC**: https://mainnet.base.org
 - **Explorer**: https://basescan.org
+- **EAS Registry**: `0x4200000000000000000000000000000000000021`
 
-Contract addresses will be published after mainnet deployment.
+**Contract Addresses** (Mainnet):
+```
+PolicyManager Proxy:  0x68ec8755100C66FB9599DF8a6a8de2006F1011cC
+SessionManager Proxy: 0x6e29216BF4Ee6Ff4c1B3e3eD048B4D0d583e84Ac
+EAS Registry:         0x4200000000000000000000000000000000000021
+```
+
+### Deployment Instructions
+
+1. **Set up environment variables:**
+```bash
+export PRIVATE_KEY="your-private-key"
+export BASE_SEPOLIA_RPC_URL="https://sepolia.base.org"
+```
+
+2. **Deploy to Base Sepolia:**
+```bash
+cd contracts
+forge script script/DeployBase.s.sol:DeployBase \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --broadcast \
+  --verify \
+  -vvvv
+```
+
+3. **Deploy to Base Mainnet:**
+```bash
+export BASE_MAINNET_RPC_URL="https://mainnet.base.org"
+forge script script/DeployBase.s.sol:DeployBase \
+  --rpc-url $BASE_MAINNET_RPC_URL \
+  --broadcast \
+  --verify \
+  -vvvv
+```
+
+Deployment info is automatically saved to `deployments/` directory.
 
 ## 🤝 Contributing
 

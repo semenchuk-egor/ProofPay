@@ -1,0 +1,123 @@
+name: Verify Contracts
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Network'
+        required: true
+        type: choice
+        options:
+          - sepolia
+          - mainnet
+      policy_manager:
+        description: 'PolicyManager implementation address'
+        required: true
+        type: string
+      session_manager:
+        description: 'SessionManager implementation address'
+        required: true
+        type: string
+
+jobs:
+  verify:
+    name: Verify Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Clean up OpenZeppelin files
+        run: |
+          rm -rf contracts/lib/openzeppelin-contracts/certora
+          rm -rf contracts/lib/openzeppelin-contracts/test
+          rm -rf contracts/lib/openzeppelin-contracts/mocks
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/certora
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/test
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/mocks
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Verify on Base Sepolia
+        if: github.event.inputs.network == 'sepolia'
+        env:
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+        run: |
+          cd contracts
+
+          echo "Verifying PolicyManager at ${{ github.event.inputs.policy_manager }}..."
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              ${{ github.event.inputs.policy_manager }} \
+              core/PolicyManager.sol:PolicyManager \
+              --chain-id 84532 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "PolicyManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Verifying SessionManager at ${{ github.event.inputs.session_manager }}..."
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              ${{ github.event.inputs.session_manager }} \
+              core/SessionManager.sol:SessionManager \
+              --chain-id 84532 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "SessionManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+      - name: Verify on Base Mainnet
+        if: github.event.inputs.network == 'mainnet'
+        env:
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+        run: |
+          cd contracts
+
+          echo "Verifying PolicyManager at ${{ github.event.inputs.policy_manager }}..."
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              ${{ github.event.inputs.policy_manager }} \
+              core/PolicyManager.sol:PolicyManager \
+              --chain-id 8453 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "PolicyManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Verifying SessionManager at ${{ github.event.inputs.session_manager }}..."
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              ${{ github.event.inputs.session_manager }} \
+              core/SessionManager.sol:SessionManager \
+              --chain-id 8453 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "SessionManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done

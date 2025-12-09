@@ -21,8 +21,10 @@ interface IEAS {
         bytes32 schema;
         uint64 time;
         uint64 expirationTime;
+        uint64 revocationTime;
         address recipient;
         address attester;
+        bytes32 refUID;
         bytes data;
     }
 

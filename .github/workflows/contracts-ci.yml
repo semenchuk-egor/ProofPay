@@ -1,0 +1,226 @@
+name: Contracts CI/CD
+
+on:
+  push:
+    branches: [draft, main]
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/contracts-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/**'
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Deploy network'
+        required: true
+        type: choice
+        options:
+          - none
+          - sepolia
+          - mainnet
+        default: none
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Clean up OpenZeppelin test and certora files
+        run: |
+          rm -rf contracts/lib/openzeppelin-contracts/certora
+          rm -rf contracts/lib/openzeppelin-contracts/test
+          rm -rf contracts/lib/openzeppelin-contracts/mocks
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/certora
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/test
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/mocks
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run Forge build
+        run: |
+          cd contracts
+          forge build --sizes
+
+      - name: Run Forge tests
+        run: |
+          cd contracts
+          forge test -vv
+
+  deploy:
+    name: Deploy Contracts
+    runs-on: ubuntu-latest
+    if: github.event.inputs.network != 'none'
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Clean up OpenZeppelin files
+        run: |
+          rm -rf contracts/lib/openzeppelin-contracts/certora
+          rm -rf contracts/lib/openzeppelin-contracts/test
+          rm -rf contracts/lib/openzeppelin-contracts/mocks
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/certora
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/test
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/mocks
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Deploy to Base Sepolia
+        if: github.event.inputs.network == 'sepolia'
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+        run: |
+          cd contracts
+          if [ -z "$BASE_SEPOLIA_RPC_URL" ]; then
+            echo "Error: BASE_SEPOLIA_RPC_URL is not set"
+            exit 1
+          fi
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "Error: DEPLOYER_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          echo "Deploying to Base Sepolia..."
+          echo "RPC URL: ${BASE_SEPOLIA_RPC_URL:0:30}..."
+          forge script script/DeployBase.s.sol:DeployBase \
+            --rpc-url "$BASE_SEPOLIA_RPC_URL" \
+            --private-key "$PRIVATE_KEY" \
+            --broadcast \
+            --legacy \
+            -vvvv
+
+          echo "Waiting 60s for transactions to be indexed..."
+          sleep 60
+
+          echo "Verifying PolicyManager..."
+          POLICY_MANAGER=$(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress')
+          echo "PolicyManager address: $POLICY_MANAGER"
+
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$POLICY_MANAGER" \
+              core/PolicyManager.sol:PolicyManager \
+              --chain-id 84532 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "PolicyManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Verifying SessionManager..."
+          SESSION_MANAGER=$(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress')
+          echo "SessionManager address: $SESSION_MANAGER"
+
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$SESSION_MANAGER" \
+              core/SessionManager.sol:SessionManager \
+              --chain-id 84532 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "SessionManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+      - name: Deploy to Base Mainnet
+        if: github.event.inputs.network == 'mainnet'
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+        run: |
+          cd contracts
+          if [ -z "$BASE_MAINNET_RPC_URL" ]; then
+            echo "Error: BASE_MAINNET_RPC_URL is not set"
+            exit 1
+          fi
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "Error: DEPLOYER_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          echo "Deploying to Base Mainnet..."
+          echo "RPC URL: ${BASE_MAINNET_RPC_URL:0:30}..."
+          forge script script/DeployBase.s.sol:DeployBase \
+            --rpc-url "$BASE_MAINNET_RPC_URL" \
+            --private-key "$PRIVATE_KEY" \
+            --broadcast \
+            --legacy \
+            -vvvv
+
+          echo "Waiting 60s for transactions to be indexed..."
+          sleep 60
+
+          echo "Verifying PolicyManager..."
+          POLICY_MANAGER=$(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress')
+          echo "PolicyManager address: $POLICY_MANAGER"
+
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$POLICY_MANAGER" \
+              core/PolicyManager.sol:PolicyManager \
+              --chain-id 8453 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "PolicyManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Verifying SessionManager..."
+          SESSION_MANAGER=$(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress')
+          echo "SessionManager address: $SESSION_MANAGER"
+
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$SESSION_MANAGER" \
+              core/SessionManager.sol:SessionManager \
+              --chain-id 8453 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "SessionManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-${{ github.event.inputs.network }}
+          path: |
+            contracts/deployments/*.json
+            contracts/broadcast/**/*
+        if: always()

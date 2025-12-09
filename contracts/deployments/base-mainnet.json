@@ -1,0 +1,20 @@
+{
+  "network": "base-mainnet",
+  "chainId": 8453,
+  "deployer": "0xE027c4a3228A8390D4f15177bC78192C906D549e",
+  "contracts": {
+    "PolicyManager": {
+      "implementation": "0xaA3348e903a9AeD770d93CA0f61Df6250f4e90E4",
+      "proxy": "0x68ec8755100C66FB9599DF8a6a8de2006F1011cC"
+    },
+    "SessionManager": {
+      "implementation": "0x8634e6BFA1903F5339b12D408E2a5639A339cCD6",
+      "proxy": "0x6e29216BF4Ee6Ff4c1B3e3eD048B4D0d583e84Ac"
+    },
+    "EASRegistry": "0x4200000000000000000000000000000000000021"
+  },
+  "links": {
+    "PolicyManager": "https://basescan.org/address/0x68ec8755100C66FB9599DF8a6a8de2006F1011cC",
+    "SessionManager": "https://basescan.org/address/0x6e29216BF4Ee6Ff4c1B3e3eD048B4D0d583e84Ac"
+  }
+}
