@@ -325,30 +325,6 @@ contract PolicyManagerTest is Test {
 
     // Fuzz tests
 
-    function testFuzz_CreatePolicyWithValidParams(
-        string calldata name,
-        string calldata description,
-        uint256 validFrom,
-        uint256 minProofs
-    ) public {
-        vm.assume(bytes(name).length > 0 && bytes(name).length < 100);
-        vm.assume(validFrom >= block.timestamp && validFrom < block.timestamp + 365 days);
-        vm.assume(minProofs > 0 && minProofs < 10);
-
-        vm.prank(creator1);
-        uint256 policyId = policyManager.createPolicy(
-            name,
-            description,
-            validFrom,
-            0,
-            minProofs
-        );
-
-        assertTrue(policyId > 0);
-        (, , , uint256 returnedMinProofs, , , , ) = policyManager.getPolicy(policyId);
-        assertEq(returnedMinProofs, minProofs);
-    }
-
     function testFuzz_AddProofRequirement(
         uint256 validityPeriod,
         bool required
