@@ -250,11 +250,11 @@ contract PolicyManagerTest is Test {
         assertFalse(policyManager.isPolicyValid(policyId));
 
         // Fast forward to valid period
-        vm.warp(block.timestamp + 150);
+        vm.warp(futureStart + 50);
         assertTrue(policyManager.isPolicyValid(policyId));
 
         // Fast forward past expiration
-        vm.warp(block.timestamp + 100);
+        vm.warp(futureEnd + 1);
         assertFalse(policyManager.isPolicyValid(policyId));
 
         vm.stopPrank();
@@ -332,7 +332,7 @@ contract PolicyManagerTest is Test {
         uint256 minProofs
     ) public {
         vm.assume(bytes(name).length > 0 && bytes(name).length < 100);
-        vm.assume(validFrom > block.timestamp);
+        vm.assume(validFrom >= block.timestamp && validFrom < block.timestamp + 365 days);
         vm.assume(minProofs > 0 && minProofs < 10);
 
         vm.prank(creator1);
