@@ -88,12 +88,23 @@ jobs:
           BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
         run: |
           cd contracts
+          if [ -z "$BASE_SEPOLIA_RPC_URL" ]; then
+            echo "Error: BASE_SEPOLIA_RPC_URL is not set"
+            exit 1
+          fi
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "Error: DEPLOYER_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          echo "Deploying to Base Sepolia..."
+          echo "RPC URL: ${BASE_SEPOLIA_RPC_URL:0:30}..."
           forge script script/DeployBase.s.sol:DeployBase \
-            --rpc-url $BASE_SEPOLIA_RPC_URL \
-            --private-key $PRIVATE_KEY \
+            --rpc-url "$BASE_SEPOLIA_RPC_URL" \
+            --private-key "$PRIVATE_KEY" \
             --broadcast \
             --verify \
-            --etherscan-api-key $BASESCAN_API_KEY \
+            --etherscan-api-key "$BASESCAN_API_KEY" \
+            --legacy \
             -vvvv
 
       - name: Deploy to Base Mainnet
@@ -104,12 +115,23 @@ jobs:
           BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
         run: |
           cd contracts
+          if [ -z "$BASE_MAINNET_RPC_URL" ]; then
+            echo "Error: BASE_MAINNET_RPC_URL is not set"
+            exit 1
+          fi
+          if [ -z "$PRIVATE_KEY" ]; then
+            echo "Error: DEPLOYER_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          echo "Deploying to Base Mainnet..."
+          echo "RPC URL: ${BASE_MAINNET_RPC_URL:0:30}..."
           forge script script/DeployBase.s.sol:DeployBase \
-            --rpc-url $BASE_MAINNET_RPC_URL \
-            --private-key $PRIVATE_KEY \
+            --rpc-url "$BASE_MAINNET_RPC_URL" \
+            --private-key "$PRIVATE_KEY" \
             --broadcast \
             --verify \
-            --etherscan-api-key $BASESCAN_API_KEY \
+            --etherscan-api-key "$BASESCAN_API_KEY" \
+            --legacy \
             -vvvv
 
       - name: Upload deployment artifacts
