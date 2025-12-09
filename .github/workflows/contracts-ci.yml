@@ -105,23 +105,48 @@ jobs:
             --legacy \
             -vvvv
 
-          echo "Waiting 30s for transactions to be indexed..."
-          sleep 30
+          echo "Waiting 60s for transactions to be indexed..."
+          sleep 60
 
-          echo "Verifying contracts..."
-          forge verify-contract \
-            $(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress') \
-            core/PolicyManager.sol:PolicyManager \
-            --chain-id 84532 \
-            --etherscan-api-key "$BASESCAN_API_KEY" \
-            --watch || true
+          echo "Verifying PolicyManager..."
+          POLICY_MANAGER=$(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress')
+          echo "PolicyManager address: $POLICY_MANAGER"
 
-          forge verify-contract \
-            $(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress') \
-            core/SessionManager.sol:SessionManager \
-            --chain-id 84532 \
-            --etherscan-api-key "$BASESCAN_API_KEY" \
-            --watch || true
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$POLICY_MANAGER" \
+              core/PolicyManager.sol:PolicyManager \
+              --chain-id 84532 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "PolicyManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Verifying SessionManager..."
+          SESSION_MANAGER=$(cat broadcast/DeployBase.s.sol/84532/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress')
+          echo "SessionManager address: $SESSION_MANAGER"
+
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$SESSION_MANAGER" \
+              core/SessionManager.sol:SessionManager \
+              --chain-id 84532 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "SessionManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
 
       - name: Deploy to Base Mainnet
         if: github.event.inputs.network == 'mainnet'
@@ -148,23 +173,48 @@ jobs:
             --legacy \
             -vvvv
 
-          echo "Waiting 30s for transactions to be indexed..."
-          sleep 30
+          echo "Waiting 60s for transactions to be indexed..."
+          sleep 60
 
-          echo "Verifying contracts..."
-          forge verify-contract \
-            $(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress') \
-            core/PolicyManager.sol:PolicyManager \
-            --chain-id 8453 \
-            --etherscan-api-key "$BASESCAN_API_KEY" \
-            --watch || true
+          echo "Verifying PolicyManager..."
+          POLICY_MANAGER=$(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "PolicyManager") | .contractAddress')
+          echo "PolicyManager address: $POLICY_MANAGER"
 
-          forge verify-contract \
-            $(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress') \
-            core/SessionManager.sol:SessionManager \
-            --chain-id 8453 \
-            --etherscan-api-key "$BASESCAN_API_KEY" \
-            --watch || true
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$POLICY_MANAGER" \
+              core/PolicyManager.sol:PolicyManager \
+              --chain-id 8453 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "PolicyManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
+
+          echo "Verifying SessionManager..."
+          SESSION_MANAGER=$(cat broadcast/DeployBase.s.sol/8453/run-latest.json | jq -r '.transactions[] | select(.contractName == "SessionManager") | .contractAddress')
+          echo "SessionManager address: $SESSION_MANAGER"
+
+          for i in 1 2 3; do
+            echo "Verification attempt $i/3..."
+            if forge verify-contract \
+              "$SESSION_MANAGER" \
+              core/SessionManager.sol:SessionManager \
+              --chain-id 8453 \
+              --etherscan-api-key "$BASESCAN_API_KEY" \
+              --watch; then
+              echo "SessionManager verified successfully!"
+              break
+            else
+              echo "Verification attempt $i failed, waiting 20s..."
+              sleep 20
+            fi
+          done
 
       - name: Upload deployment artifacts
         uses: actions/upload-artifact@v4
