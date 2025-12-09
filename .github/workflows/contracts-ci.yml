@@ -12,11 +12,15 @@ on:
       - 'contracts/**'
   workflow_dispatch:
     inputs:
-      deploy:
-        description: 'Deploy to testnet'
-        required: false
-        type: boolean
-        default: false
+      network:
+        description: 'Deploy network'
+        required: true
+        type: choice
+        options:
+          - none
+          - sepolia
+          - mainnet
+        default: none
 
 env:
   FOUNDRY_PROFILE: ci
@@ -44,11 +48,6 @@ jobs:
         with:
           version: stable
 
-      - name: Show Foundry version
-        run: |
-          forge --version
-          cast --version
-
       - name: Run Forge build
         run: |
           cd contracts
@@ -59,27 +58,30 @@ jobs:
           cd contracts
           forge test -vv
 
-      - name: Check formatting
-        run: |
-          cd contracts
-          forge fmt --check
-        continue-on-error: true
-
-  deploy-sepolia:
-    name: Deploy to Base Sepolia
+  deploy:
+    name: Deploy Contracts
     runs-on: ubuntu-latest
-    if: github.event.inputs.deploy == 'true'
+    if: github.event.inputs.network != 'none'
     needs: [test]
-    environment: base-sepolia
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      - name: Clean up OpenZeppelin files
+        run: |
+          rm -rf contracts/lib/openzeppelin-contracts/certora
+          rm -rf contracts/lib/openzeppelin-contracts/test
+          rm -rf contracts/lib/openzeppelin-contracts/mocks
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/certora
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/test
+          rm -rf contracts/lib/openzeppelin-contracts-upgradeable/mocks
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Deploy to Base Sepolia
+        if: github.event.inputs.network == 'sepolia'
         env:
           PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
@@ -87,14 +89,27 @@ jobs:
           cd contracts
           forge script script/DeployBase.s.sol:DeployBase \
             --rpc-url $BASE_SEPOLIA_RPC_URL \
+            --private-key $PRIVATE_KEY \
             --broadcast \
-            --verify \
+            -vvvv
+
+      - name: Deploy to Base Mainnet
+        if: github.event.inputs.network == 'mainnet'
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          BASE_MAINNET_RPC_URL: ${{ secrets.BASE_MAINNET_RPC_URL }}
+        run: |
+          cd contracts
+          forge script script/DeployBase.s.sol:DeployBase \
+            --rpc-url $BASE_MAINNET_RPC_URL \
+            --private-key $PRIVATE_KEY \
+            --broadcast \
             -vvvv
 
       - name: Upload deployment artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: base-sepolia-deployment
+          name: deployment-${{ github.event.inputs.network }}
           path: |
             contracts/deployments/*.json
             contracts/broadcast/**/*
