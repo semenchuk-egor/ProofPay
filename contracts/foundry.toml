@@ -7,13 +7,12 @@ libs = ["lib"]
 solc = "0.8.20"
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+via_ir = true
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
     "forge-std/=lib/forge-std/src/"
 ]
-# Note: Foundry doesn't support 'exclude' option, use src/test/script paths instead
 build_info = true
 extra_output = ["storageLayout"]
 
