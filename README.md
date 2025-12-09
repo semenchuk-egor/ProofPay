@@ -204,8 +204,9 @@ yarn test
 
 **Contract Addresses** (Testnet):
 ```
-PolicyManager Proxy:  (will be deployed)
-SessionManager Proxy: (will be deployed)
+PolicyManager Proxy:  0xC879C9fe4Dd2ec91125074CE98E64b44218EB970
+SessionManager Proxy: 0x4c03a6C94D75933AA7793489CFAf32b646A36887
+EAS Registry:         0x4200000000000000000000000000000000000021
 ```
 
 ### Base Mainnet

@@ -91,54 +91,8 @@ contract DeployBase is Script {
         console.log("");
         console.log("EAS Registry:", easAddress);
 
-        // Save deployment addresses to JSON
-        _saveDeployment(
-            block.chainid == 84532 ? "base-sepolia" : "base-mainnet",
-            address(policyImpl),
-            address(policyManager),
-            address(sessionImpl),
-            address(sessionManager),
-            easAddress
-        );
-    }
-
-    function _saveDeployment(
-        string memory network,
-        address policyImpl,
-        address policyProxy,
-        address sessionImpl,
-        address sessionProxy,
-        address easAddress
-    ) internal {
-        string memory json = string(abi.encodePacked(
-            '{\n',
-            '  "network": "', network, '",\n',
-            '  "chainId": ', vm.toString(block.chainid), ',\n',
-            '  "timestamp": ', vm.toString(block.timestamp), ',\n',
-            '  "deployer": "', vm.toString(msg.sender), '",\n',
-            '  "contracts": {\n',
-            '    "PolicyManager": {\n',
-            '      "implementation": "', vm.toString(policyImpl), '",\n',
-            '      "proxy": "', vm.toString(policyProxy), '"\n',
-            '    },\n',
-            '    "SessionManager": {\n',
-            '      "implementation": "', vm.toString(sessionImpl), '",\n',
-            '      "proxy": "', vm.toString(sessionProxy), '"\n',
-            '    },\n',
-            '    "EASRegistry": "', vm.toString(easAddress), '"\n',
-            '  }\n',
-            '}'
-        ));
-
-        string memory filename = string(abi.encodePacked(
-            "./deployments/",
-            network,
-            "-",
-            vm.toString(block.timestamp),
-            ".json"
-        ));
-
-        vm.writeFile(filename, json);
-        console.log("\nDeployment info saved to:", filename);
+        // Verification command for manual use:
+        console.log("\nTo verify contracts, run:");
+        console.log("forge verify-contract <address> <contract> --chain-id", block.chainid);
     }
 }
